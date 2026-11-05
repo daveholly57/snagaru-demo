@@ -77,6 +77,17 @@
   .or span{flex:1;height:1px;background:var(--line)}
   .scanbtn{display:flex;align-items:center;justify-content:center;gap:8px}
   .scanbtn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2}
+  .capsel{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:2px 0}
+  .capt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px 4px;border-radius:12px;border:1.5px solid var(--line);background:var(--screen-2);color:var(--soft);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .capt svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
+  .capt.on{border-color:var(--red);background:color-mix(in srgb,var(--red) 8%,var(--screen));color:var(--red-deep)}
+  .cappanel{display:flex;flex-direction:column;gap:13px}
+  .cappanel[hidden]{display:none}
+  .capdesc{font-size:13px;color:var(--soft);margin:2px 0 0;line-height:1.45}
+  .capnote{font-size:12px;color:var(--faint);margin:0;text-align:center}
+  .copyrow{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:12px;padding:11px 12px}
+  .fwd{flex:1;font-size:13px;font-family:ui-monospace,Menlo,monospace;color:var(--ink);word-break:break-all}
+  .cpy{border:0;background:var(--ink);color:#fff;border-radius:9px;padding:8px 13px;font-size:12px;font-weight:700;cursor:pointer;flex:none}
   /* pickup */
   .hero{border-radius:20px;padding:22px 18px;text-align:center;color:#fff;background:linear-gradient(165deg,var(--red),var(--red-deep))}
   .hero .rc{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.95}
@@ -145,10 +156,31 @@
   <section class="screen" id="add" hidden>
     <div class="topbar"><button class="back" onclick="show('home')">‹</button><span class="ttl">Add a package</span></div>
     <p style="font-size:13px;color:var(--soft);margin:0;line-height:1.4">Tell us it's coming — we'll match it the moment it lands, no name guessing.</p>
-    <div class="field"><span class="lb">Tracking number or link</span><input class="inp" value="1Z999AA10123456784" oninput="detect(this.value)"><span id="detbox"></span></div>
-    <div class="or"><span></span>OR<span></span></div>
-    <button class="btn ghost scanbtn" onclick="toast('Camera would open here')"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>Scan barcode or QR</button>
-    <button class="btn" onclick="toast('Added — we will ping you when it arrives.');setTimeout(()=>show('home'),700)">Add to my packages</button>
+
+    <div class="capsel">
+      <button class="capt on" data-c="paste" onclick="capTab('paste')"><svg viewBox="0 0 24 24"><rect x="8" y="3.5" width="8" height="4" rx="1.2"/><path d="M8 5.5H6a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5a2 2 0 0 0-2-2h-2"/></svg>Paste</button>
+      <button class="capt" data-c="forward" onclick="capTab('forward')"><svg viewBox="0 0 24 24"><path d="M3 6h14v9H3z"/><path d="M3 7l7 5 7-5"/><path d="M18 10l3 2.5-3 2.5"/></svg>Forward</button>
+      <button class="capt" data-c="scan" onclick="capTab('scan')"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>Scan</button>
+    </div>
+
+    <div class="cappanel" data-c="paste">
+      <div class="field"><span class="lb">Tracking number</span><input id="trk" class="inp" value="1Z999AA10123456784" oninput="detect(this.value)"><span id="detbox"></span></div>
+      <button class="btn" onclick="addPkg()">Add to my packages</button>
+    </div>
+
+    <div class="cappanel" data-c="forward" hidden>
+      <p class="capdesc">Forward any shipping-confirmation email to your personal Snagaru address — we read the tracking number automatically, no typing.</p>
+      <div class="field"><span class="lb">Your forwarding address</span>
+        <div class="copyrow"><span class="fwd">dave.h7k2@inbound.snagaru.com</span><button class="cpy" onclick="copyFwd()">Copy</button></div>
+      </div>
+      <p class="capnote">Works with Amazon, UPS, FedEx, USPS and more.</p>
+    </div>
+
+    <div class="cappanel" data-c="scan" hidden>
+      <p class="capdesc">Point your camera at the shipping label's barcode or QR code and we'll read the number for you.</p>
+      <button class="btn ghost scanbtn" onclick="toast('Camera would open here')"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>Open scanner</button>
+    </div>
+
     <div class="grow"></div>
   </section>
 
@@ -214,13 +246,20 @@
     clearTimeout(window._tt); window._tt = setTimeout(function(){ t.classList.remove('show'); }, 1800);
   }
   function detect(v){
-    var box = document.getElementById('detbox'); v = (v||'').trim().toUpperCase();
-    var carrier = /^1Z/.test(v) ? 'UPS' : /^TBA/.test(v) ? 'Amazon' : /^9[0-9]{15,}/.test(v) ? 'USPS' : (v.length>=10 ? 'Carrier' : '');
+    var box = document.getElementById('detbox'); if(!box) return;
+    v = (v||'').replace(/tracking\s*#?:?/i,'').trim().toUpperCase();
+    var carrier = /^1Z/.test(v) ? 'UPS' : /^TBA/.test(v) ? 'Amazon' : /^9[0-9]{15,}/.test(v) ? 'USPS' : (/^\d{12,15}$/.test(v) ? 'FedEx' : (v.length>=10 ? 'Carrier' : ''));
     box.innerHTML = carrier
-      ? '<div class="vbanner" style="margin-top:8px"><span class="tk">✓</span><div><div class="who">'+carrier+' · valid tracking number</div><div class="via">Detected from the format</div></div></div>'
-      : '';
+      ? '<div class="vbanner" style="margin-top:8px"><span class="tk">✓</span><div><div class="who">Looks like a '+carrier+' number</div><div class="via">Detected from the format</div></div></div>'
+      : (v.length ? '<div class="via" style="margin-top:8px;color:var(--faint);font-size:12px">That doesn\'t look like a tracking number yet — double-check it.</div>' : '');
   }
-  detect(document.querySelector('#add .inp').value);
+  function capTab(c){
+    document.querySelectorAll('#add .capt').forEach(function(b){ b.classList.toggle('on', b.dataset.c===c); });
+    document.querySelectorAll('#add .cappanel').forEach(function(p){ p.hidden = p.dataset.c!==c; });
+  }
+  function addPkg(){ toast('Added — we will ping you when it arrives.'); setTimeout(function(){ show('home'); },700); }
+  function copyFwd(){ try{ navigator.clipboard.writeText('dave.h7k2@inbound.snagaru.com'); }catch(e){} toast('Forwarding address copied'); }
+  detect(document.getElementById('trk').value);
 </script>
 <script>
   if ('serviceWorker' in navigator) {
